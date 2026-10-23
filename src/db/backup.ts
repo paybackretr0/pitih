@@ -1,9 +1,17 @@
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq } from "drizzle-orm";
 
-import { db } from './client';
-import { budgets, categories, goals, recurringRules, settings, transactions } from './schema';
-import type { BackupPayload } from '@/features/backup/backup-format';
-import type { CsvTransaction } from '@/features/backup/csv';
+import type { BackupPayload } from "@/features/backup/backup-format";
+import type { CsvTransaction } from "@/features/backup/csv";
+import { db } from "./client";
+import {
+  budgets,
+  categories,
+  checkins,
+  goals,
+  recurringRules,
+  settings,
+  transactions,
+} from "./schema";
 
 function chunk<T>(rows: T[], size: number): T[][] {
   const chunks: T[][] = [];
@@ -14,15 +22,23 @@ function chunk<T>(rows: T[], size: number): T[][] {
 }
 
 export async function readBackupPayload(): Promise<BackupPayload> {
-  const [categoryRows, transactionRows, budgetRows, settingRows, recurringRows, goalRows] =
-    await Promise.all([
-      db.select().from(categories),
-      db.select().from(transactions),
-      db.select().from(budgets),
-      db.select().from(settings),
-      db.select().from(recurringRules),
-      db.select().from(goals),
-    ]);
+  const [
+    categoryRows,
+    transactionRows,
+    budgetRows,
+    settingRows,
+    recurringRows,
+    goalRows,
+    checkinRows,
+  ] = await Promise.all([
+    db.select().from(categories),
+    db.select().from(transactions),
+    db.select().from(budgets),
+    db.select().from(settings),
+    db.select().from(recurringRules),
+    db.select().from(goals),
+    db.select().from(checkins),
+  ]);
 
   return {
     categories: categoryRows.map((row) => ({
@@ -79,6 +95,15 @@ export async function readBackupPayload(): Promise<BackupPayload> {
       isArchived: row.isArchived,
       createdAt: row.createdAt,
     })),
+    checkins: checkinRows.map((row) => ({
+      id: row.id,
+      weekStart: row.weekStart,
+      expense: row.expense,
+      income: row.income,
+      daysLogged: row.daysLogged,
+      status: row.status,
+      createdAt: row.createdAt,
+    })),
   };
 }
 
@@ -102,12 +127,15 @@ export async function readTransactionsForCsv(): Promise<CsvTransaction[]> {
  * through leaves the previous data untouched. Chunking keeps the number of SQL
  * variables under SQLite's limit on long histories.
  */
-export async function replaceBackupPayload(payload: BackupPayload): Promise<void> {
+export async function replaceBackupPayload(
+  payload: BackupPayload,
+): Promise<void> {
   db.transaction((tx) => {
     tx.delete(transactions).run();
     tx.delete(budgets).run();
     tx.delete(recurringRules).run();
     tx.delete(goals).run();
+    tx.delete(checkins).run();
     tx.delete(categories).run();
     tx.delete(settings).run();
 
@@ -125,6 +153,9 @@ export async function replaceBackupPayload(payload: BackupPayload): Promise<void
     }
     for (const rows of chunk(payload.goals, 100)) {
       tx.insert(goals).values(rows).run();
+    }
+    for (const rows of chunk(payload.checkins, 100)) {
+      tx.insert(checkins).values(rows).run();
     }
     for (const rows of chunk(payload.settings, 100)) {
       tx.insert(settings).values(rows).run();

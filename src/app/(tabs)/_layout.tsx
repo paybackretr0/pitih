@@ -1,5 +1,4 @@
-import { router } from 'expo-router';
-import { useState, type ComponentProps } from 'react';
+import { router } from "expo-router";
 import {
   TabList,
   TabSlot,
@@ -7,12 +6,13 @@ import {
   Tabs,
   type TabListProps,
   type TabTriggerSlotProps,
-} from 'expo-router/ui';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "expo-router/ui";
+import { useState, type ComponentProps } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { NeoText } from '@/components/neo/neo-text';
-import { border as borderTokens, colors, layout, spacing } from '@/theme';
+import { NeoText } from "@/components/neo/neo-text";
+import { border as borderTokens, colors, layout, spacing } from "@/theme";
 
 export default function TabsLayout() {
   return (
@@ -47,7 +47,8 @@ function NeoBar(props: TabListProps) {
       style={[
         styles.bar,
         { paddingBottom: Math.max(insets.bottom, spacing.sm) },
-      ]}>
+      ]}
+    >
       {props.children}
     </View>
   );
@@ -63,7 +64,7 @@ function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
       {...pressableProps}
       accessibilityRole="tab"
       accessibilityState={{ selected: isFocused }}
-      accessibilityLabel={typeof children === 'string' ? children : undefined}
+      accessibilityLabel={typeof children === "string" ? children : undefined}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
       style={({ pressed }) => [
@@ -71,7 +72,8 @@ function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
         isFocused && styles.tabActive,
         focused && styles.tabFocused,
         pressed && styles.tabPressed,
-      ]}>
+      ]}
+    >
       <NeoText variant="label" numberOfLines={1} style={styles.tabLabel}>
         {children}
       </NeoText>
@@ -87,11 +89,12 @@ function AddButton() {
       accessibilityLabel="Catat transaksi"
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
-      onPress={() => router.push('/tambah')}
+      onPress={() => router.push("/tambah")}
       style={({ pressed }) => [
         styles.addFrame,
         pressed && { transform: [{ translateX: 3 }, { translateY: 3 }] },
-      ]}>
+      ]}
+    >
       {({ pressed }) => (
         <>
           {!pressed && <View pointerEvents="none" style={styles.addShadow} />}
@@ -109,8 +112,8 @@ function AddButton() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   bar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.xs,
     paddingTop: spacing.sm,
     paddingHorizontal: spacing.sm,
@@ -121,15 +124,15 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     minHeight: layout.minTapTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 2,
     borderWidth: borderTokens.width,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   tabActive: { backgroundColor: colors.yellow, borderColor: colors.ink },
   tabFocused: { borderColor: colors.blue },
-  tabPressed: { backgroundColor: '#FFF0C9' },
+  tabPressed: { backgroundColor: "#FFF0C9" },
   tabLabel: { fontSize: 10, lineHeight: 13 },
   addFrame: {
     width: 48,
@@ -139,7 +142,7 @@ const styles = StyleSheet.create({
     paddingBottom: 3,
   },
   addShadow: {
-    position: 'absolute',
+    position: "absolute",
     top: 3,
     left: 3,
     right: 0,
@@ -148,8 +151,8 @@ const styles = StyleSheet.create({
   },
   addFace: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: colors.pink,
     borderWidth: borderTokens.width,
     borderColor: colors.ink,

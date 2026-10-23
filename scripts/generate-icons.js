@@ -4,11 +4,11 @@
  *
  * The mark is a thick P on a yellow tile with the app's hard black shadow.
  */
-const fs = require('node:fs');
-const path = require('node:path');
-const { PNG } = require('pngjs');
+const fs = require("node:fs");
+const path = require("node:path");
+const { PNG } = require("pngjs");
 
-const OUT = path.resolve('assets', 'images');
+const OUT = path.resolve("assets", "images");
 const SS = 4;
 const W = 1024;
 
@@ -64,7 +64,15 @@ function drawMark(png, scale, originX, originY, options = {}) {
   if (shadow) fillRect(png, sx(232), sy(232), 640 * scale, 640 * scale, INK);
   if (tile) {
     fillRect(png, sx(192), sy(192), 640 * scale, 640 * scale, YELLOW);
-    strokeRect(png, sx(192), sy(192), 640 * scale, 640 * scale, 24 * scale, INK);
+    strokeRect(
+      png,
+      sx(192),
+      sy(192),
+      640 * scale,
+      640 * scale,
+      24 * scale,
+      INK,
+    );
   }
 
   for (const [x, y, w, h] of P_BARS) {
@@ -86,7 +94,8 @@ function downsample(source, size) {
       let a = 0;
       for (let by = 0; by < block; by += 1) {
         for (let bx = 0; bx < block; bx += 1) {
-          const index = ((y * block + by) * source.width + (x * block + bx)) * 4;
+          const index =
+            ((y * block + by) * source.width + (x * block + bx)) * 4;
           const alpha = source.data[index + 3] / 255;
           r += source.data[index] * alpha;
           g += source.data[index + 1] * alpha;
@@ -125,7 +134,7 @@ function make(size, draw) {
 
 // iOS/Android legacy icon: cream field, centered mark, no transparency.
 save(
-  'icon.png',
+  "icon.png",
   make(1024, (png) => {
     fillRect(png, 0, 0, png.width, png.height, CREAM);
     const scale = (png.width / W) * 0.98;
@@ -136,7 +145,7 @@ save(
 
 // Adaptive foreground: mark only, inside the 66% safe area.
 save(
-  'android-icon-foreground.png',
+  "android-icon-foreground.png",
   make(1024, (png) => {
     const scale = (png.width / W) * 0.62;
     const origin = (png.width - W * scale) / 2;
@@ -146,7 +155,7 @@ save(
 
 // Adaptive background: flat cream.
 save(
-  'android-icon-background.png',
+  "android-icon-background.png",
   make(1024, (png) => {
     fillRect(png, 0, 0, png.width, png.height, CREAM);
   }),
@@ -154,7 +163,7 @@ save(
 
 // Themed icon: the P alone, as a white mask.
 save(
-  'android-icon-monochrome.png',
+  "android-icon-monochrome.png",
   make(1024, (png) => {
     const scale = (png.width / W) * 1.3;
     const centerX = 500;
@@ -162,14 +171,21 @@ save(
     const originX = png.width / 2 - centerX * scale;
     const originY = png.height / 2 - centerY * scale;
     for (const [x, y, w, h] of P_BARS) {
-      fillRect(png, originX + x * scale, originY + y * scale, w * scale, h * scale, WHITE);
+      fillRect(
+        png,
+        originX + x * scale,
+        originY + y * scale,
+        w * scale,
+        h * scale,
+        WHITE,
+      );
     }
   }),
 );
 
 // Splash mark on the cream splash background.
 save(
-  'splash-icon.png',
+  "splash-icon.png",
   make(512, (png) => {
     const scale = (png.width / W) * 0.92;
     const origin = (png.width - W * scale) / 2;
@@ -179,7 +195,7 @@ save(
 
 // Favicon: only the P reads at 48px, so skip the tile and shadow.
 save(
-  'favicon.png',
+  "favicon.png",
   make(48, (png) => {
     fillRect(png, 0, 0, png.width, png.height, YELLOW);
     const scale = (png.width / W) * 1.8;
@@ -188,7 +204,14 @@ save(
     const originX = png.width / 2 - centerX * scale;
     const originY = png.height / 2 - centerY * scale;
     for (const [x, y, w, h] of P_BARS) {
-      fillRect(png, originX + x * scale, originY + y * scale, w * scale, h * scale, INK);
+      fillRect(
+        png,
+        originX + x * scale,
+        originY + y * scale,
+        w * scale,
+        h * scale,
+        INK,
+      );
     }
   }),
 );

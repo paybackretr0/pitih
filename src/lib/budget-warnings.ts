@@ -1,4 +1,4 @@
-export type BudgetWarningLevel = 'warning' | 'over';
+export type BudgetWarningLevel = "warning" | "over";
 
 export type CategorySpend = {
   categoryId: number;
@@ -38,7 +38,7 @@ export function categoryBudgetWarnings(
       spent: spend.total,
       budget,
       percent: Math.round(ratio * 100),
-      level: ratio >= 1 ? 'over' : 'warning',
+      level: ratio >= 1 ? "over" : "warning",
     });
   }
 

@@ -1,15 +1,26 @@
-import { and, asc, desc, eq, gte, isNotNull, isNull, lte, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  isNotNull,
+  isNull,
+  lte,
+  sql,
+} from "drizzle-orm";
 
-import { db } from './client';
+import { db } from "./client";
 import {
   budgets,
   categories,
+  checkins,
   settings,
   transactions,
   type NeedWant,
-  type TransactionType,
   type Transaction,
-} from './schema';
+  type TransactionType,
+} from "./schema";
 
 export type DateRange = { start: string; end: string };
 
@@ -36,7 +47,10 @@ export type PeriodSummary = {
 };
 
 function inRange(range: DateRange) {
-  return and(gte(transactions.date, range.start), lte(transactions.date, range.end));
+  return and(
+    gte(transactions.date, range.start),
+    lte(transactions.date, range.end),
+  );
 }
 
 export async function listTransactions(
@@ -59,11 +73,17 @@ export async function listTransactions(
     })
     .from(transactions)
     .innerJoin(categories, eq(categories.id, transactions.categoryId))
-    .where(typeFilter ? and(inRange(range), eq(transactions.type, typeFilter)) : inRange(range))
+    .where(
+      typeFilter
+        ? and(inRange(range), eq(transactions.type, typeFilter))
+        : inRange(range),
+    )
     .orderBy(desc(transactions.date), desc(transactions.id));
 }
 
-export async function getPeriodSummary(range: DateRange): Promise<PeriodSummary> {
+export async function getPeriodSummary(
+  range: DateRange,
+): Promise<PeriodSummary> {
   const rows = await db
     .select({
       type: transactions.type,
@@ -74,16 +94,22 @@ export async function getPeriodSummary(range: DateRange): Promise<PeriodSummary>
     .where(inRange(range))
     .groupBy(transactions.type, transactions.needWant);
 
-  const summary: PeriodSummary = { income: 0, expense: 0, need: 0, want: 0, untagged: 0 };
+  const summary: PeriodSummary = {
+    income: 0,
+    expense: 0,
+    need: 0,
+    want: 0,
+    untagged: 0,
+  };
   for (const row of rows) {
     const total = Number(row.total);
-    if (row.type === 'income') {
+    if (row.type === "income") {
       summary.income += total;
       continue;
     }
     summary.expense += total;
-    if (row.needWant === 'need') summary.need += total;
-    else if (row.needWant === 'want') summary.want += total;
+    if (row.needWant === "need") summary.need += total;
+    else if (row.needWant === "want") summary.want += total;
     else summary.untagged += total;
   }
   return summary;
@@ -102,7 +128,7 @@ export async function getTopExpenses(range: DateRange, limit = 5) {
     })
     .from(transactions)
     .innerJoin(categories, eq(categories.id, transactions.categoryId))
-    .where(and(inRange(range), eq(transactions.type, 'expense')))
+    .where(and(inRange(range), eq(transactions.type, "expense")))
     .orderBy(desc(transactions.amount), desc(transactions.id))
     .limit(limit);
 }
@@ -118,7 +144,7 @@ export async function getCategoryTotals(range: DateRange) {
     })
     .from(transactions)
     .innerJoin(categories, eq(categories.id, transactions.categoryId))
-    .where(and(inRange(range), eq(transactions.type, 'expense')))
+    .where(and(inRange(range), eq(transactions.type, "expense")))
     .groupBy(categories.id, categories.name, categories.icon, categories.color)
     .orderBy(desc(sql`coalesce(sum(${transactions.amount}), 0)`));
 }
@@ -130,20 +156,32 @@ export async function getDailyExpenses(range: DateRange) {
       total: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
     })
     .from(transactions)
-    .where(and(inRange(range), eq(transactions.type, 'expense')))
+    .where(and(inRange(range), eq(transactions.type, "expense")))
     .groupBy(transactions.date)
     .orderBy(asc(transactions.date));
+}
+
+export async function getLoggedDays(range: DateRange): Promise<number> {
+  const rows = await db
+    .select({ date: transactions.date })
+    .from(transactions)
+    .where(inRange(range))
+    .groupBy(transactions.date);
+  return rows.length;
 }
 
 export async function getSpentOn(date: string): Promise<number> {
   const [row] = await db
     .select({ total: sql<number>`coalesce(sum(${transactions.amount}), 0)` })
     .from(transactions)
-    .where(and(eq(transactions.type, 'expense'), eq(transactions.date, date)));
+    .where(and(eq(transactions.type, "expense"), eq(transactions.date, date)));
   return Number(row?.total ?? 0);
 }
 
-export async function listCategories(typeFilter?: TransactionType, includeArchived = false) {
+export async function listCategories(
+  typeFilter?: TransactionType,
+  includeArchived = false,
+) {
   const conditions = [];
   if (typeFilter) conditions.push(eq(categories.type, typeFilter));
   if (!includeArchived) conditions.push(eq(categories.isArchived, false));
@@ -172,11 +210,18 @@ export async function updateCategory(
 }
 
 export async function setCategoryArchived(id: number, archived: boolean) {
-  await db.update(categories).set({ isArchived: archived }).where(eq(categories.id, id));
+  await db
+    .update(categories)
+    .set({ isArchived: archived })
+    .where(eq(categories.id, id));
 }
 
 export async function getTransaction(id: number): Promise<Transaction | null> {
-  const rows = await db.select().from(transactions).where(eq(transactions.id, id)).limit(1);
+  const rows = await db
+    .select()
+    .from(transactions)
+    .where(eq(transactions.id, id))
+    .limit(1);
   return rows[0] ?? null;
 }
 
@@ -214,15 +259,25 @@ export async function deleteTransaction(id: number) {
   await db.delete(transactions).where(eq(transactions.id, id));
 }
 
-export async function getTotalBudget(periodIndex: number): Promise<number | null> {
-  const rows = await db.select().from(budgets).where(isNull(budgets.categoryId));
+export async function getTotalBudget(
+  periodIndex: number,
+): Promise<number | null> {
+  const rows = await db
+    .select()
+    .from(budgets)
+    .where(isNull(budgets.categoryId));
   const fallback = rows.find((row) => row.periodIndex === null);
   const specific = rows.find((row) => row.periodIndex === periodIndex);
   return (specific ?? fallback)?.amount ?? null;
 }
 
-export async function getCategoryBudgets(periodIndex: number): Promise<Record<number, number>> {
-  const rows = await db.select().from(budgets).where(isNotNull(budgets.categoryId));
+export async function getCategoryBudgets(
+  periodIndex: number,
+): Promise<Record<number, number>> {
+  const rows = await db
+    .select()
+    .from(budgets)
+    .where(isNotNull(budgets.categoryId));
   const result: Record<number, number> = {};
   for (const row of rows) {
     if (row.categoryId === null) continue;
@@ -241,11 +296,17 @@ export type BudgetSet = {
 };
 
 /** Raw budget rows for one scope: null reads the default, a number reads that period. */
-export async function getBudgets(periodIndex: number | null): Promise<BudgetSet> {
+export async function getBudgets(
+  periodIndex: number | null,
+): Promise<BudgetSet> {
   const rows = await db
     .select()
     .from(budgets)
-    .where(periodIndex === null ? isNull(budgets.periodIndex) : eq(budgets.periodIndex, periodIndex));
+    .where(
+      periodIndex === null
+        ? isNull(budgets.periodIndex)
+        : eq(budgets.periodIndex, periodIndex),
+    );
   const set: BudgetSet = { total: null, categories: {} };
   for (const row of rows) {
     if (row.categoryId === null) set.total = row.amount;
@@ -254,13 +315,18 @@ export async function getBudgets(periodIndex: number | null): Promise<BudgetSet>
   return set;
 }
 
-export async function setTotalBudget(amount: number | null, periodIndex: number | null = null) {
+export async function setTotalBudget(
+  amount: number | null,
+  periodIndex: number | null = null,
+) {
   await db
     .delete(budgets)
     .where(
       and(
         isNull(budgets.categoryId),
-        periodIndex === null ? isNull(budgets.periodIndex) : eq(budgets.periodIndex, periodIndex),
+        periodIndex === null
+          ? isNull(budgets.periodIndex)
+          : eq(budgets.periodIndex, periodIndex),
       ),
     );
   if (amount !== null && amount > 0) {
@@ -278,7 +344,9 @@ export async function setCategoryBudget(
     .where(
       and(
         eq(budgets.categoryId, categoryId),
-        periodIndex === null ? isNull(budgets.periodIndex) : eq(budgets.periodIndex, periodIndex),
+        periodIndex === null
+          ? isNull(budgets.periodIndex)
+          : eq(budgets.periodIndex, periodIndex),
       ),
     );
   if (amount !== null && amount > 0) {
@@ -291,4 +359,5 @@ export async function resetAllData() {
   await db.delete(budgets);
   await db.delete(categories);
   await db.delete(settings);
+  await db.delete(checkins);
 }

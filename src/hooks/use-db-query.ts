@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAppStore } from '@/store/app-store';
+import { useAppStore } from "@/store/app-store";
 
 type Result<T> = {
   key: string;
@@ -36,7 +36,7 @@ export function useDbQuery<T>(query: () => Promise<T>, deps: unknown[]) {
         setResult({
           key: requestKey,
           data: null,
-          error: error instanceof Error ? error.message : 'Gagal memuat data.',
+          error: error instanceof Error ? error.message : "Gagal memuat data.",
         });
       });
 

@@ -1,15 +1,15 @@
-import * as DocumentPicker from 'expo-document-picker';
-import { File, Paths } from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
+import * as DocumentPicker from "expo-document-picker";
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
 
+import { readBackupPayload, readTransactionsForCsv } from "@/db/backup";
 import {
   backupFileName,
   parseBackupJson,
   serializeBackup,
   type ParsedBackup,
-} from './backup-format';
-import { csvFileName, transactionsToCsv } from './csv';
-import { readBackupPayload, readTransactionsForCsv } from '@/db/backup';
+} from "./backup-format";
+import { csvFileName, transactionsToCsv } from "./csv";
 
 async function writeAndShare(
   fileName: string,
@@ -17,7 +17,7 @@ async function writeAndShare(
   options: { mimeType: string; UTI: string; dialogTitle: string },
 ): Promise<void> {
   if (!(await Sharing.isAvailableAsync())) {
-    throw new Error('Perangkat ini tidak punya menu berbagi file.');
+    throw new Error("Perangkat ini tidak punya menu berbagi file.");
   }
   const file = new File(Paths.cache, fileName);
   file.create({ overwrite: true });
@@ -28,25 +28,25 @@ async function writeAndShare(
 export async function exportBackupJson(): Promise<void> {
   const payload = await readBackupPayload();
   await writeAndShare(backupFileName(), serializeBackup(payload), {
-    mimeType: 'application/json',
-    UTI: 'public.json',
-    dialogTitle: 'Simpan backup PITIH',
+    mimeType: "application/json",
+    UTI: "public.json",
+    dialogTitle: "Simpan backup PITIH",
   });
 }
 
 export async function exportTransactionsCsv(): Promise<void> {
   const rows = await readTransactionsForCsv();
   await writeAndShare(csvFileName(), transactionsToCsv(rows), {
-    mimeType: 'text/csv',
-    UTI: 'public.comma-separated-values-text',
-    dialogTitle: 'Simpan transaksi PITIH',
+    mimeType: "text/csv",
+    UTI: "public.comma-separated-values-text",
+    dialogTitle: "Simpan transaksi PITIH",
   });
 }
 
 /** Returns null when the user closes the picker without choosing a file. */
 export async function pickBackupJson(): Promise<ParsedBackup | null> {
   const result = await DocumentPicker.getDocumentAsync({
-    type: ['application/json', 'text/plain'],
+    type: ["application/json", "text/plain"],
     copyToCacheDirectory: true,
     multiple: false,
   });

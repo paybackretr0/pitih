@@ -1,9 +1,9 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 
-import { db } from './client';
-import { categories, recurringRules, transactions } from './schema';
-import type { NeedWant, TransactionType } from './schema';
-import { dueRecurringDates } from '@/features/recurring/recurring';
+import { dueRecurringDates } from "@/features/recurring/recurring";
+import { db } from "./client";
+import type { NeedWant, TransactionType } from "./schema";
+import { categories, recurringRules, transactions } from "./schema";
 
 export type RecurringInput = {
   type: TransactionType;
@@ -50,7 +50,11 @@ export async function listRecurringRules(): Promise<RecurringListItem[]> {
     })
     .from(recurringRules)
     .innerJoin(categories, eq(categories.id, recurringRules.categoryId))
-    .orderBy(desc(recurringRules.isActive), asc(recurringRules.dayOfMonth), asc(recurringRules.id));
+    .orderBy(
+      desc(recurringRules.isActive),
+      asc(recurringRules.dayOfMonth),
+      asc(recurringRules.id),
+    );
 }
 
 export async function getRecurringRule(id: number) {
@@ -62,7 +66,9 @@ export async function getRecurringRule(id: number) {
   return rows[0] ?? null;
 }
 
-export async function createRecurringRule(input: RecurringInput): Promise<void> {
+export async function createRecurringRule(
+  input: RecurringInput,
+): Promise<void> {
   await db.insert(recurringRules).values(input);
 }
 
@@ -160,7 +166,12 @@ export async function processRecurring(today: string): Promise<number> {
       }
       tx.update(recurringRules)
         .set({ lastRunDate: lastDate, updatedAt: sql`(datetime('now'))` })
-        .where(and(eq(recurringRules.id, rule.id), eq(recurringRules.isActive, true)))
+        .where(
+          and(
+            eq(recurringRules.id, rule.id),
+            eq(recurringRules.isActive, true),
+          ),
+        )
         .run();
     });
 

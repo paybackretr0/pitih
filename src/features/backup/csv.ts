@@ -1,5 +1,5 @@
-import { dateStamp } from './backup-format';
-import type { NeedWant, TransactionType } from '@/db/schema';
+import type { NeedWant, TransactionType } from "@/db/schema";
+import { dateStamp } from "./backup-format";
 
 export type CsvTransaction = {
   date: string;
@@ -10,16 +10,23 @@ export type CsvTransaction = {
   note: string | null;
 };
 
-export const CSV_HEADERS = ['Tanggal', 'Jenis', 'Kategori', 'Nominal', 'Tag', 'Catatan'] as const;
+export const CSV_HEADERS = [
+  "Tanggal",
+  "Jenis",
+  "Kategori",
+  "Nominal",
+  "Tag",
+  "Catatan",
+] as const;
 
 const typeLabel: Record<TransactionType, string> = {
-  income: 'Masuk',
-  expense: 'Keluar',
+  income: "Masuk",
+  expense: "Keluar",
 };
 
 const needWantLabel: Record<NeedWant, string> = {
-  need: 'Kebutuhan',
-  want: 'Keinginan',
+  need: "Kebutuhan",
+  want: "Keinginan",
 };
 
 export function csvFileName(date = new Date()): string {
@@ -36,7 +43,7 @@ function escapeCell(value: string): string {
  * integers so the numbers stay exact when the file is opened anywhere.
  */
 export function transactionsToCsv(rows: CsvTransaction[]): string {
-  const lines = [CSV_HEADERS.join(',')];
+  const lines = [CSV_HEADERS.join(",")];
 
   for (const row of rows) {
     lines.push(
@@ -45,13 +52,13 @@ export function transactionsToCsv(rows: CsvTransaction[]): string {
         typeLabel[row.type],
         row.categoryName,
         String(row.amount),
-        row.needWant ? needWantLabel[row.needWant] : '',
-        row.note ?? '',
+        row.needWant ? needWantLabel[row.needWant] : "",
+        row.note ?? "",
       ]
         .map(escapeCell)
-        .join(','),
+        .join(","),
     );
   }
 
-  return `\uFEFF${lines.join('\r\n')}\r\n`;
+  return `\uFEFF${lines.join("\r\n")}\r\n`;
 }

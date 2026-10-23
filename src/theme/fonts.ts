@@ -3,10 +3,10 @@
  * Space Mono keeps rupiah figures in fixed-width columns so amounts line up.
  */
 export const fonts = {
-  display: 'SpaceGrotesk_700Bold',
-  body: 'SpaceGrotesk_400Regular',
-  mono: 'SpaceMono_400Regular',
-  monoBold: 'SpaceMono_700Bold',
+  display: "SpaceGrotesk_700Bold",
+  body: "SpaceGrotesk_400Regular",
+  mono: "SpaceMono_400Regular",
+  monoBold: "SpaceMono_700Bold",
 } as const;
 
 export const fontSizes = {

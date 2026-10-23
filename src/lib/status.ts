@@ -1,4 +1,4 @@
-export type StatusLevel = 'aman' | 'hati-hati' | 'boros';
+export type StatusLevel = "aman" | "hati-hati" | "boros";
 
 export type BudgetStatus = {
   level: StatusLevel;
@@ -7,9 +7,9 @@ export type BudgetStatus = {
 };
 
 export const statusLabel: Record<StatusLevel, string> = {
-  aman: 'AMAN',
-  'hati-hati': 'HATI-HATI',
-  boros: 'BOROS',
+  aman: "AMAN",
+  "hati-hati": "HATI-HATI",
+  boros: "BOROS",
 };
 
 /**
@@ -25,15 +25,23 @@ export function budgetStatus(
   if (!budget || budget <= 0) return null;
 
   const spentPct = spent / budget;
-  const elapsed = daysLeft <= 0 ? periodLength : Math.min(periodLength, periodLength - daysLeft + 1);
+  const elapsed =
+    daysLeft <= 0
+      ? periodLength
+      : Math.min(periodLength, periodLength - daysLeft + 1);
   const elapsedPct = Math.max(elapsed / periodLength, 0.01);
   const pace = spentPct / elapsedPct;
 
-  const level: StatusLevel = spentPct >= 1 ? 'boros' : pace > 1.15 ? 'hati-hati' : 'aman';
+  const level: StatusLevel =
+    spentPct >= 1 ? "boros" : pace > 1.15 ? "hati-hati" : "aman";
   return { level, spentPct, pace };
 }
 
-export function dailyAllowance(budget: number | null, spent: number, daysLeft: number): number | null {
+export function dailyAllowance(
+  budget: number | null,
+  spent: number,
+  daysLeft: number,
+): number | null {
   if (!budget || budget <= 0) return null;
   if (daysLeft <= 0) return 0;
   return Math.max(0, Math.floor((budget - spent) / daysLeft));

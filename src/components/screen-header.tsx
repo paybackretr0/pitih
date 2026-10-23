@@ -1,7 +1,7 @@
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, View } from "react-native";
 
-import { NeoText } from './neo/neo-text';
-import { spacing } from '@/theme';
+import { spacing } from "@/theme";
+import { NeoText } from "./neo/neo-text";
 
 type Props = {
   title: string;
@@ -27,8 +27,8 @@ export function ScreenHeader({ title, subtitle, right }: Props) {
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.md,
   },
   text: { flex: 1, gap: 2 },

@@ -1,18 +1,18 @@
-import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { router } from "expo-router";
+import { useMemo, useState } from "react";
+import { Alert, StyleSheet, View } from "react-native";
 
-import { DateField } from '@/components/date-field';
-import { NeoButton } from '@/components/neo/neo-button';
-import { NeoCard } from '@/components/neo/neo-card';
-import { NeoInput } from '@/components/neo/neo-input';
-import { NeoScreen } from '@/components/neo/neo-screen';
-import { NeoSegmented } from '@/components/neo/neo-segmented';
-import { NeoError, NeoLoading } from '@/components/neo/neo-states';
-import { NeoText } from '@/components/neo/neo-text';
-import { ScreenHeader } from '@/components/screen-header';
-import { TimeField } from '@/components/time-field';
-import { replaceBackupPayload } from '@/db/backup';
+import { DateField } from "@/components/date-field";
+import { NeoButton } from "@/components/neo/neo-button";
+import { NeoCard } from "@/components/neo/neo-card";
+import { NeoInput } from "@/components/neo/neo-input";
+import { NeoScreen } from "@/components/neo/neo-screen";
+import { NeoSegmented } from "@/components/neo/neo-segmented";
+import { NeoError, NeoLoading } from "@/components/neo/neo-states";
+import { NeoText } from "@/components/neo/neo-text";
+import { ScreenHeader } from "@/components/screen-header";
+import { TimeField } from "@/components/time-field";
+import { replaceBackupPayload } from "@/db/backup";
 import {
   getBudgets,
   listCategories,
@@ -20,37 +20,53 @@ import {
   setCategoryBudget,
   setTotalBudget,
   type BudgetSet,
-} from '@/db/queries';
-import type { Category } from '@/db/schema';
-import { seedDatabase } from '@/db/seed';
+} from "@/db/queries";
+import type { Category } from "@/db/schema";
+import { seedDatabase } from "@/db/seed";
 import {
   deleteSetting,
   getPeriodStart,
   getSetting,
-  SETTING_KEYS,
   setSetting,
-} from '@/db/settings';
-import { exportBackupJson, exportTransactionsCsv, pickBackupJson } from '@/features/backup/backup-service';
-import type { ParsedBackup } from '@/features/backup/backup-format';
-import { DEFAULT_REMINDER_TIME, formatReminderTime, parseReminderTime } from '@/features/reminder/reminder';
-import { cancelReminder, scheduleDailyReminder } from '@/features/reminder/reminder-service';
-import { clearReceipts } from '@/features/receipts/receipts';
-import { useDbQuery } from '@/hooks/use-db-query';
-import { useToday } from '@/hooks/use-today';
-import { dayLabelFull, rp, shortDateWithYear, todayISO } from '@/lib/format';
-import { currentPeriod, daysLeft, periodAtIndex, type Period } from '@/lib/period';
-import { bumpData, useAppStore } from '@/store/app-store';
-import { border as borderTokens, colors, spacing } from '@/theme';
+  SETTING_KEYS,
+} from "@/db/settings";
+import type { ParsedBackup } from "@/features/backup/backup-format";
+import {
+  exportBackupJson,
+  exportTransactionsCsv,
+  pickBackupJson,
+} from "@/features/backup/backup-service";
+import { clearReceipts } from "@/features/receipts/receipts";
+import {
+  DEFAULT_REMINDER_TIME,
+  formatReminderTime,
+  parseReminderTime,
+} from "@/features/reminder/reminder";
+import {
+  cancelReminder,
+  scheduleDailyReminder,
+} from "@/features/reminder/reminder-service";
+import { useDbQuery } from "@/hooks/use-db-query";
+import { useToday } from "@/hooks/use-today";
+import { dayLabelFull, rp, shortDateWithYear, todayISO } from "@/lib/format";
+import {
+  currentPeriod,
+  daysLeft,
+  periodAtIndex,
+  type Period,
+} from "@/lib/period";
+import { bumpData, useAppStore } from "@/store/app-store";
+import { border as borderTokens, colors, spacing } from "@/theme";
 
 function onlyDigits(value: string): string {
-  return value.replace(/[^\d]/g, '').slice(0, 12);
+  return value.replace(/[^\d]/g, "").slice(0, 12);
 }
 
-type BudgetMode = 'default' | 'period';
+type BudgetMode = "default" | "period";
 
 const BUDGET_MODES: { value: BudgetMode; label: string; bg?: string }[] = [
-  { value: 'default', label: 'SEMUA PERIODE', bg: colors.yellow },
-  { value: 'period', label: 'PERIODE INI', bg: colors.blue },
+  { value: "default", label: "SEMUA PERIODE", bg: colors.yellow },
+  { value: "period", label: "PERIODE INI", bg: colors.blue },
 ];
 
 function budgetInputs(
@@ -60,7 +76,7 @@ function budgetInputs(
   const next: Record<number, string> = {};
   for (const category of categories) {
     const value = values[category.id];
-    next[category.id] = value ? String(value) : '';
+    next[category.id] = value ? String(value) : "";
   }
   return next;
 }
@@ -86,38 +102,35 @@ export default function PengaturanScreen() {
     return periodAtIndex(periodStart, base.index);
   }, [periodStart, today]);
 
-  const settingsQ = useDbQuery(
-    async () => {
-      if (!period) throw new Error('Tanggal mulai periode belum diatur.');
-      const [
-        categories,
-        budgetDefaults,
-        budgetOverrides,
-        reminderTime,
-        reminderEnabled,
+  const settingsQ = useDbQuery(async () => {
+    if (!period) throw new Error("Tanggal mulai periode belum diatur.");
+    const [
+      categories,
+      budgetDefaults,
+      budgetOverrides,
+      reminderTime,
+      reminderEnabled,
+      notificationId,
+    ] = await Promise.all([
+      listCategories("expense"),
+      getBudgets(null),
+      getBudgets(period.index),
+      getSetting(SETTING_KEYS.reminderTime),
+      getSetting(SETTING_KEYS.reminderEnabled),
+      getSetting(SETTING_KEYS.reminderNotificationId),
+    ]);
+    const clock = parseReminderTime(reminderTime);
+    return {
+      categories,
+      budgetDefaults,
+      budgetOverrides,
+      reminder: {
+        time: clock ? formatReminderTime(clock) : DEFAULT_REMINDER_TIME,
+        enabled: reminderEnabled === "true",
         notificationId,
-      ] = await Promise.all([
-        listCategories('expense'),
-        getBudgets(null),
-        getBudgets(period.index),
-        getSetting(SETTING_KEYS.reminderTime),
-        getSetting(SETTING_KEYS.reminderEnabled),
-        getSetting(SETTING_KEYS.reminderNotificationId),
-      ]);
-      const clock = parseReminderTime(reminderTime);
-      return {
-        categories,
-        budgetDefaults,
-        budgetOverrides,
-        reminder: {
-          time: clock ? formatReminderTime(clock) : DEFAULT_REMINDER_TIME,
-          enabled: reminderEnabled === 'true',
-          notificationId,
-        },
-      };
-    },
-    [period?.index],
-  );
+      },
+    };
+  }, [period?.index]);
 
   if (!period) return <NeoLoading label="MENYIAPKAN PERIODE" />;
   if (settingsQ.loading && !settingsQ.data) return <NeoLoading />;
@@ -125,12 +138,17 @@ export default function PengaturanScreen() {
     return (
       <NeoScreen>
         <ScreenHeader title="PENGATURAN" />
-        <NeoError message={settingsQ.error ?? 'Data tidak tersedia.'} onRetry={settingsQ.retry} />
+        <NeoError
+          message={settingsQ.error ?? "Data tidak tersedia."}
+          onRetry={settingsQ.retry}
+        />
       </NeoScreen>
     );
   }
 
-  return <SettingsContent data={settingsQ.data} period={period} today={today} />;
+  return (
+    <SettingsContent data={settingsQ.data} period={period} today={today} />
+  );
 }
 
 function SettingsContent({
@@ -144,12 +162,12 @@ function SettingsContent({
 }) {
   const setPeriodStart = useAppStore((state) => state.setPeriodStart);
 
-  const [budgetMode, setBudgetMode] = useState<BudgetMode>('default');
+  const [budgetMode, setBudgetMode] = useState<BudgetMode>("default");
   const [budgetInput, setBudgetInput] = useState(
-    data.budgetDefaults.total ? String(data.budgetDefaults.total) : '',
+    data.budgetDefaults.total ? String(data.budgetDefaults.total) : "",
   );
-  const [categoryInputs, setCategoryInputs] = useState<Record<number, string>>(() =>
-    budgetInputs(data.categories, data.budgetDefaults.categories),
+  const [categoryInputs, setCategoryInputs] = useState<Record<number, string>>(
+    () => budgetInputs(data.categories, data.budgetDefaults.categories),
   );
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -158,7 +176,11 @@ function SettingsContent({
   const [reminderEnabled, setReminderEnabled] = useState(data.reminder.enabled);
   const [reminderId, setReminderId] = useState(data.reminder.notificationId);
   const [reminderBusy, setReminderBusy] = useState(false);
-  const [backupBusy, setBackupBusy] = useState<'json' | 'csv' | 'restore' | null>(null);
+  const [reminderError, setReminderError] = useState<string | null>(null);
+  const [reminderNotice, setReminderNotice] = useState<string | null>(null);
+  const [backupBusy, setBackupBusy] = useState<
+    "json" | "csv" | "restore" | null
+  >(null);
 
   const saveBudget = async () => {
     if (saving) return;
@@ -166,19 +188,27 @@ function SettingsContent({
     setNotice(null);
     setError(null);
     try {
-      const periodIndex = budgetMode === 'period' ? period.index : null;
+      const periodIndex = budgetMode === "period" ? period.index : null;
       const total = Number(budgetInput || 0);
       await setTotalBudget(total > 0 ? total : null, periodIndex);
       for (const category of data.categories) {
         const value = Number(categoryInputs[category.id] || 0);
-        await setCategoryBudget(category.id, value > 0 ? value : null, periodIndex);
+        await setCategoryBudget(
+          category.id,
+          value > 0 ? value : null,
+          periodIndex,
+        );
       }
       bumpData();
       setNotice(
-        budgetMode === 'period' ? 'Budget periode ini disimpan.' : 'Budget default disimpan.',
+        budgetMode === "period"
+          ? "Budget periode ini disimpan."
+          : "Budget default disimpan.",
       );
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Gagal menyimpan budget.');
+      setError(
+        caught instanceof Error ? caught.message : "Gagal menyimpan budget.",
+      );
     } finally {
       setSaving(false);
     }
@@ -186,8 +216,9 @@ function SettingsContent({
 
   const switchBudgetMode = (next: BudgetMode) => {
     setBudgetMode(next);
-    const source = next === 'default' ? data.budgetDefaults : data.budgetOverrides;
-    setBudgetInput(source.total ? String(source.total) : '');
+    const source =
+      next === "default" ? data.budgetDefaults : data.budgetOverrides;
+    setBudgetInput(source.total ? String(source.total) : "");
     setCategoryInputs(budgetInputs(data.categories, source.categories));
     setError(null);
     setNotice(null);
@@ -197,89 +228,109 @@ function SettingsContent({
     try {
       await setSetting(SETTING_KEYS.periodStart, iso);
       setPeriodStart(iso);
-      setNotice('Tanggal mulai periode diperbarui.');
+      setNotice("Tanggal mulai periode diperbarui.");
       bumpData();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Gagal mengubah tanggal mulai.');
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Gagal mengubah tanggal mulai.",
+      );
     }
   };
 
   const changeStartDate = (iso: string) => {
     if (iso === period.startDate) return;
     Alert.alert(
-      'Ubah tanggal mulai?',
-      'Semua periode dihitung ulang dari tanggal ini. Riwayat transaksi ikut bergeser ke periode baru.',
+      "Ubah tanggal mulai?",
+      "Semua periode dihitung ulang dari tanggal ini. Riwayat transaksi ikut bergeser ke periode baru.",
       [
-        { text: 'BATAL', style: 'cancel' },
-        { text: 'UBAH', onPress: () => void applyStartDate(iso) },
+        { text: "BATAL", style: "cancel" },
+        { text: "UBAH", onPress: () => void applyStartDate(iso) },
       ],
     );
   };
 
-  const reminderClock = parseReminderTime(reminderTime) ?? { hour: 20, minute: 0 };
+  const reminderClock = parseReminderTime(reminderTime) ?? {
+    hour: 20,
+    minute: 0,
+  };
 
   const changeReminderTime = async (hour: number, minute: number) => {
     const value = formatReminderTime({ hour, minute });
     setReminderTime(value);
-    setError(null);
-    setNotice(null);
+    setReminderError(null);
+    setReminderNotice(null);
     try {
       await setSetting(SETTING_KEYS.reminderTime, value);
       if (reminderEnabled) {
         await cancelReminder(reminderId);
         const id = await scheduleDailyReminder(hour, minute);
         if (!id) {
-          await setSetting(SETTING_KEYS.reminderEnabled, 'false');
+          await setSetting(SETTING_KEYS.reminderEnabled, "false");
           await deleteSetting(SETTING_KEYS.reminderNotificationId);
           setReminderEnabled(false);
           setReminderId(null);
-          setError('Izin notifikasi ditolak. Pengingat dimatikan.');
+          setReminderError("Izin notifikasi ditolak. Pengingat dimatikan.");
         } else {
           await setSetting(SETTING_KEYS.reminderNotificationId, id);
           setReminderId(id);
-          setNotice(`Pengingat pindah ke jam ${value}.`);
+          setReminderNotice(`Pengingat pindah ke jam ${value}.`);
         }
       } else {
-        setNotice(`Jam pengingat disimpan: ${value}.`);
+        setReminderNotice(`Jam pengingat disimpan: ${value}.`);
       }
       bumpData();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Gagal mengubah jam pengingat.');
+      setReminderError(
+        caught instanceof Error
+          ? caught.message
+          : "Gagal mengubah jam pengingat.",
+      );
     }
   };
 
   const toggleReminder = async () => {
     if (reminderBusy) return;
     setReminderBusy(true);
-    setError(null);
-    setNotice(null);
+    setReminderError(null);
+    setReminderNotice(null);
     try {
       if (reminderEnabled) {
         await cancelReminder(reminderId);
-        await setSetting(SETTING_KEYS.reminderEnabled, 'false');
+        await setSetting(SETTING_KEYS.reminderEnabled, "false");
         await deleteSetting(SETTING_KEYS.reminderNotificationId);
         setReminderEnabled(false);
         setReminderId(null);
-        setNotice('Pengingat harian dimatikan.');
+        setReminderNotice("Pengingat harian dimatikan.");
       } else {
-        const id = await scheduleDailyReminder(reminderClock.hour, reminderClock.minute);
+        const id = await scheduleDailyReminder(
+          reminderClock.hour,
+          reminderClock.minute,
+        );
         if (!id) {
-          setError('Izin notifikasi ditolak. Aktifkan lewat pengaturan sistem.');
+          setReminderError(
+            "Izin notifikasi ditolak. Aktifkan lewat pengaturan sistem.",
+          );
           return;
         }
         await setSetting(SETTING_KEYS.reminderTime, reminderTime);
-        await setSetting(SETTING_KEYS.reminderEnabled, 'true');
+        await setSetting(SETTING_KEYS.reminderEnabled, "true");
         await setSetting(SETTING_KEYS.reminderNotificationId, id);
         setReminderEnabled(true);
         setReminderId(id);
-        setNotice(`Pengingat aktif tiap hari jam ${reminderTime}.`);
+        setReminderNotice(`Pengingat aktif tiap hari jam ${reminderTime}.`);
       }
       bumpData();
     } catch (caught) {
-      await setSetting(SETTING_KEYS.reminderEnabled, 'false').catch(() => undefined);
+      await setSetting(SETTING_KEYS.reminderEnabled, "false").catch(
+        () => undefined,
+      );
       setReminderEnabled(false);
       setReminderId(null);
-      setError(caught instanceof Error ? caught.message : 'Gagal mengatur pengingat.');
+      setReminderError(
+        caught instanceof Error ? caught.message : "Gagal mengatur pengingat.",
+      );
     } finally {
       setReminderBusy(false);
     }
@@ -287,14 +338,18 @@ function SettingsContent({
 
   const backupJson = async () => {
     if (backupBusy) return;
-    setBackupBusy('json');
+    setBackupBusy("json");
     setError(null);
     setNotice(null);
     try {
       await exportBackupJson();
-      setNotice('File backup dibuat. Simpan ke Google Drive atau kirim ke diri sendiri.');
+      setNotice(
+        "File backup dibuat. Simpan ke Google Drive atau kirim ke diri sendiri.",
+      );
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Gagal membuat backup.');
+      setError(
+        caught instanceof Error ? caught.message : "Gagal membuat backup.",
+      );
     } finally {
       setBackupBusy(null);
     }
@@ -302,40 +357,47 @@ function SettingsContent({
 
   const exportCsv = async () => {
     if (backupBusy) return;
-    setBackupBusy('csv');
+    setBackupBusy("csv");
     setError(null);
     setNotice(null);
     try {
       await exportTransactionsCsv();
-      setNotice('File CSV dibuat. Bisa dibuka di Excel atau Google Sheets.');
+      setNotice("File CSV dibuat. Bisa dibuka di Excel atau Google Sheets.");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Gagal membuat CSV.');
+      setError(caught instanceof Error ? caught.message : "Gagal membuat CSV.");
     } finally {
       setBackupBusy(null);
     }
   };
 
   const applyRestore = async (picked: ParsedBackup) => {
-    setBackupBusy('restore');
+    setBackupBusy("restore");
     try {
       await cancelReminder(reminderId);
       await replaceBackupPayload(picked.payload);
       await seedDatabase();
 
-      const restored = new Map(picked.payload.settings.map((item) => [item.key, item.value]));
-      const clock = parseReminderTime(restored.get(SETTING_KEYS.reminderTime) ?? null) ?? {
+      const restored = new Map(
+        picked.payload.settings.map((item) => [item.key, item.value]),
+      );
+      const clock = parseReminderTime(
+        restored.get(SETTING_KEYS.reminderTime) ?? null,
+      ) ?? {
         hour: 20,
         minute: 0,
       };
       let nextReminderId: string | null = null;
       let nextReminderEnabled = false;
-      if (restored.get(SETTING_KEYS.reminderEnabled) === 'true') {
-        nextReminderId = await scheduleDailyReminder(clock.hour, clock.minute);
+      if (restored.get(SETTING_KEYS.reminderEnabled) === "true") {
+        nextReminderId = await scheduleDailyReminder(
+          clock.hour,
+          clock.minute,
+        ).catch(() => null);
         nextReminderEnabled = nextReminderId !== null;
         if (nextReminderId) {
           await setSetting(SETTING_KEYS.reminderNotificationId, nextReminderId);
         } else {
-          await setSetting(SETTING_KEYS.reminderEnabled, 'false');
+          await setSetting(SETTING_KEYS.reminderEnabled, "false");
           await deleteSetting(SETTING_KEYS.reminderNotificationId);
         }
       }
@@ -345,32 +407,34 @@ function SettingsContent({
       );
       const nextBudgets: Record<number, string> = {};
       for (const category of picked.payload.categories) {
-        if (category.type !== 'expense' || category.isArchived) continue;
+        if (category.type !== "expense" || category.isArchived) continue;
         const budget = picked.payload.budgets.find(
           (row) => row.categoryId === category.id && row.periodIndex === null,
         );
-        nextBudgets[category.id] = budget ? String(budget.amount) : '';
+        nextBudgets[category.id] = budget ? String(budget.amount) : "";
       }
 
       setReminderTime(formatReminderTime(clock));
       setReminderEnabled(nextReminderEnabled);
       setReminderId(nextReminderId);
-      setBudgetMode('default');
-      setBudgetInput(totalBudget ? String(totalBudget.amount) : '');
+      setBudgetMode("default");
+      setBudgetInput(totalBudget ? String(totalBudget.amount) : "");
       setCategoryInputs(nextBudgets);
-      setNotice('Backup dipulihkan. Semua angka di layar ini ikut dimuat ulang.');
+      setNotice(
+        "Backup dipulihkan. Semua angka di layar ini ikut dimuat ulang.",
+      );
 
       const start = await getPeriodStart();
       setPeriodStart(start ?? todayISO());
       bumpData();
       Alert.alert(
-        'Data dipulihkan',
-        `${picked.counts.transactions} transaksi dimuat. Periode dihitung ulang dari tanggal mulai di backup.`,
+        "Data dipulihkan",
+        `${picked.counts.transactions} transaksi dan ${picked.counts.checkins} stempel dimuat. Periode dihitung ulang dari tanggal mulai di backup.`,
       );
     } catch (caught) {
       Alert.alert(
-        'Gagal memulihkan',
-        caught instanceof Error ? caught.message : 'Coba lagi sebentar.',
+        "Gagal memulihkan",
+        caught instanceof Error ? caught.message : "Coba lagi sebentar.",
       );
     } finally {
       setBackupBusy(null);
@@ -379,25 +443,29 @@ function SettingsContent({
 
   const restore = async () => {
     if (backupBusy) return;
-    setBackupBusy('restore');
+    setBackupBusy("restore");
     setError(null);
     setNotice(null);
     try {
       const picked = await pickBackupJson();
       if (!picked) return;
       Alert.alert(
-        'Pulihkan dari backup?',
-        `${picked.counts.transactions} transaksi, ${picked.counts.categories} kategori, ${picked.counts.recurring} jadwal berulang, dan ${picked.counts.goals} target akan mengganti semua data sekarang.`,
+        "Pulihkan dari backup?",
+        `${picked.counts.transactions} transaksi, ${picked.counts.categories} kategori, ${picked.counts.recurring} jadwal berulang, ${picked.counts.goals} target, dan ${picked.counts.checkins} stempel akan mengganti semua data sekarang.`,
 
         [
-          { text: 'BATAL', style: 'cancel' },
-          { text: 'PULIHKAN', style: 'destructive', onPress: () => void applyRestore(picked) },
+          { text: "BATAL", style: "cancel" },
+          {
+            text: "PULIHKAN",
+            style: "destructive",
+            onPress: () => void applyRestore(picked),
+          },
         ],
       );
     } catch (caught) {
       Alert.alert(
-        'File tidak bisa dipakai',
-        caught instanceof Error ? caught.message : 'Backup tidak dikenali.',
+        "File tidak bisa dipakai",
+        caught instanceof Error ? caught.message : "Backup tidak dikenali.",
       );
     } finally {
       setBackupBusy(null);
@@ -406,13 +474,13 @@ function SettingsContent({
 
   const wipe = () => {
     Alert.alert(
-      'Hapus semua data?',
-      'Semua transaksi, budget, dan kategori buatanmu akan dihapus permanen. Data tidak bisa dikembalikan.',
+      "Hapus semua data?",
+      "Semua transaksi, budget, kategori, target, jadwal, dan stempel tertib akan dihapus permanen. Data tidak bisa dikembalikan.",
       [
-        { text: 'BATAL', style: 'cancel' },
+        { text: "BATAL", style: "cancel" },
         {
-          text: 'HAPUS SEMUA',
-          style: 'destructive',
+          text: "HAPUS SEMUA",
+          style: "destructive",
           onPress: () => {
             void (async () => {
               try {
@@ -421,15 +489,20 @@ function SettingsContent({
                 await seedDatabase();
                 const start = await getPeriodStart();
                 setPeriodStart(start ?? todayISO());
-                setBudgetMode('default');
-                setBudgetInput('');
+                setBudgetMode("default");
+                setBudgetInput("");
                 setCategoryInputs({});
                 bumpData();
-                Alert.alert('Data dihapus', 'Aplikasi kembali ke kondisi awal.');
+                Alert.alert(
+                  "Data dihapus",
+                  "Aplikasi kembali ke kondisi awal.",
+                );
               } catch (caught) {
                 Alert.alert(
-                  'Gagal menghapus',
-                  caught instanceof Error ? caught.message : 'Coba lagi sebentar.',
+                  "Gagal menghapus",
+                  caught instanceof Error
+                    ? caught.message
+                    : "Coba lagi sebentar.",
                 );
               }
             })();
@@ -461,7 +534,8 @@ function SettingsContent({
           maximumDate={new Date()}
         />
         <NeoText variant="small">
-          Tanggal mulai menentukan siklus 30 hari. Mengubahnya akan menggeser riwayat periode.
+          Tanggal mulai menentukan siklus 30 hari. Mengubahnya akan menggeser
+          riwayat periode.
         </NeoText>
       </NeoCard>
 
@@ -474,13 +548,13 @@ function SettingsContent({
           accessibilityLabel="Budget berlaku untuk"
         />
         <NeoText variant="small">
-          {budgetMode === 'default'
-            ? 'Budget default dipakai di semua periode yang tidak punya budget khusus.'
+          {budgetMode === "default"
+            ? "Budget default dipakai di semua periode yang tidak punya budget khusus."
             : `Budget khusus ${shortDateWithYear(period.start)} - ${shortDateWithYear(period.end)}. Kosongkan input untuk ikut budget default.`}
         </NeoText>
         <NeoText variant="small">
-          Budget total dipakai untuk status dan jatah harian. Budget kategori hanya mengingatkan
-          pemakaian per kategori.
+          Budget total dipakai untuk status dan jatah harian. Budget kategori
+          hanya mengingatkan pemakaian per kategori.
         </NeoText>
         <NeoInput
           label="BUDGET TOTAL (RUPIAH)"
@@ -488,33 +562,37 @@ function SettingsContent({
           onChangeText={(value) => setBudgetInput(onlyDigits(value))}
           keyboardType="number-pad"
           placeholder={
-            budgetMode === 'period' && data.budgetDefaults.total
+            budgetMode === "period" && data.budgetDefaults.total
               ? `Ikut default: ${rp(data.budgetDefaults.total)}`
-              : '0'
+              : "0"
           }
         />
         <NeoText variant="small" color="#11111199">
           {budgetInput
             ? rp(Number(budgetInput))
-            : budgetMode === 'period' && data.budgetDefaults.total
+            : budgetMode === "period" && data.budgetDefaults.total
               ? `Ikut default: ${rp(data.budgetDefaults.total)}`
-              : 'Belum diatur'}
+              : "Belum diatur"}
         </NeoText>
 
         <NeoText variant="label">BUDGET PER KATEGORI</NeoText>
         {data.categories.map((category) => (
           <NeoInput
             key={category.id}
-            label={`${category.icon ?? ''} ${category.name}`.trim()}
-            value={categoryInputs[category.id] ?? ''}
+            label={`${category.icon ?? ""} ${category.name}`.trim()}
+            value={categoryInputs[category.id] ?? ""}
             onChangeText={(value) =>
-              setCategoryInputs((current) => ({ ...current, [category.id]: onlyDigits(value) }))
+              setCategoryInputs((current) => ({
+                ...current,
+                [category.id]: onlyDigits(value),
+              }))
             }
             keyboardType="number-pad"
             placeholder={
-              budgetMode === 'period' && data.budgetDefaults.categories[category.id]
+              budgetMode === "period" &&
+              data.budgetDefaults.categories[category.id]
                 ? `Ikut default: ${rp(data.budgetDefaults.categories[category.id])}`
-                : 'Tanpa budget'
+                : "Tanpa budget"
             }
           />
         ))}
@@ -531,7 +609,7 @@ function SettingsContent({
         ) : null}
 
         <NeoButton
-          label={saving ? 'MENYIMPAN...' : 'SIMPAN BUDGET'}
+          label={saving ? "MENYIMPAN..." : "SIMPAN BUDGET"}
           onPress={saveBudget}
           disabled={saving}
         />
@@ -542,20 +620,26 @@ function SettingsContent({
         <NeoText variant="small">
           Tambah, ubah nama, ganti ikon dan warna, atau arsipkan kategori.
         </NeoText>
-        <NeoButton label="KELOLA KATEGORI" onPress={() => router.push('/kategori')} />
+        <NeoButton
+          label="KELOLA KATEGORI"
+          onPress={() => router.push("/kategori")}
+        />
       </NeoCard>
 
       <NeoCard innerStyle={styles.stack}>
         <NeoText variant="label">OTOMATIS & TARGET</NeoText>
         <NeoText variant="small">
-          Catat langganan dan cicilan tanpa input ulang, lalu sisihkan dana untuk target yang
-          mau dikejar.
+          Catat langganan dan cicilan tanpa input ulang, lalu sisihkan dana
+          untuk target yang mau dikejar.
         </NeoText>
-        <NeoButton label="TRANSAKSI BERULANG" onPress={() => router.push('/berulang')} />
+        <NeoButton
+          label="TRANSAKSI BERULANG"
+          onPress={() => router.push("/berulang")}
+        />
         <NeoButton
           label="TARGET TABUNGAN"
           bg={colors.purple}
-          onPress={() => router.push('/target')}
+          onPress={() => router.push("/target")}
         />
       </NeoCard>
 
@@ -565,13 +649,19 @@ function SettingsContent({
           <View
             style={[
               styles.statePill,
-              { backgroundColor: reminderEnabled ? colors.green : colors.white },
-            ]}>
-            <NeoText variant="label">{reminderEnabled ? 'AKTIF' : 'MATI'}</NeoText>
+              {
+                backgroundColor: reminderEnabled ? colors.green : colors.white,
+              },
+            ]}
+          >
+            <NeoText variant="label">
+              {reminderEnabled ? "AKTIF" : "MATI"}
+            </NeoText>
           </View>
         </View>
         <NeoText variant="small">
-          Satu notifikasi lokal tiap hari. Tidak butuh internet dan tidak dikirim ke mana pun.
+          Satu notifikasi lokal tiap hari. Tidak butuh internet dan tidak
+          dikirim ke mana pun.
         </NeoText>
         <TimeField
           label="JAM PENGINGAT"
@@ -582,55 +672,68 @@ function SettingsContent({
         <NeoButton
           label={
             reminderBusy
-              ? 'MENYIAPKAN...'
+              ? "MENYIAPKAN..."
               : reminderEnabled
-                ? 'MATIKAN PENGINGAT'
-                : 'AKTIFKAN PENGINGAT'
+                ? "MATIKAN PENGINGAT"
+                : "AKTIFKAN PENGINGAT"
           }
           bg={reminderEnabled ? colors.red : colors.yellow}
           disabled={reminderBusy}
           onPress={() => void toggleReminder()}
         />
+        {reminderError ? (
+          <View style={styles.errorBox}>
+            <NeoText variant="small">{reminderError}</NeoText>
+          </View>
+        ) : null}
+        {reminderNotice ? (
+          <View style={styles.noticeBox}>
+            <NeoText variant="small">{reminderNotice}</NeoText>
+          </View>
+        ) : null}
         <NeoText variant="small">
-          Di Android 13 ke atas, izin notifikasi muncul saat pengingat pertama kali diaktifkan.
+          Di Android 13 ke atas, izin notifikasi muncul saat pengingat pertama
+          kali diaktifkan.
         </NeoText>
       </NeoCard>
 
       <NeoCard innerStyle={styles.stack}>
         <NeoText variant="label">BACKUP</NeoText>
         <NeoText variant="small">
-          Data cuma ada di HP ini. Simpan file JSON ke Google Drive atau kirim ke diri sendiri
-          supaya tidak hilang saat ganti HP.
+          Data cuma ada di HP ini. Simpan file JSON ke Google Drive atau kirim
+          ke diri sendiri supaya tidak hilang saat ganti HP.
         </NeoText>
         <NeoButton
-          label={backupBusy === 'json' ? 'MENYIAPKAN...' : 'BACKUP JSON'}
+          label={backupBusy === "json" ? "MENYIAPKAN..." : "BACKUP JSON"}
           disabled={backupBusy !== null}
           onPress={() => void backupJson()}
         />
         <NeoButton
-          label={backupBusy === 'csv' ? 'MENYIAPKAN...' : 'EXPORT CSV'}
+          label={backupBusy === "csv" ? "MENYIAPKAN..." : "EXPORT CSV"}
           bg={colors.blue}
           disabled={backupBusy !== null}
           onPress={() => void exportCsv()}
         />
         <NeoButton
-          label={backupBusy === 'restore' ? 'MEMBACA FILE...' : 'PULIHKAN DARI JSON'}
+          label={
+            backupBusy === "restore" ? "MEMBACA FILE..." : "PULIHKAN DARI JSON"
+          }
           bg={colors.white}
           disabled={backupBusy !== null}
           onPress={() => void restore()}
         />
         <NeoText variant="small">
-          Memulihkan backup mengganti semua transaksi, kategori, budget, jadwal berulang, target,
-          dan pengaturan yang ada sekarang. Foto struk tidak ikut file JSON, jadi simpan fotonya
-          terpisah.
+          Memulihkan backup mengganti semua transaksi, kategori, budget, jadwal
+          berulang, target, stempel tertib, dan pengaturan yang ada sekarang.
+          Foto struk tidak ikut file JSON, jadi simpan fotonya terpisah.
         </NeoText>
       </NeoCard>
 
       <NeoCard innerStyle={styles.stack}>
         <NeoText variant="label">DATA</NeoText>
         <NeoText variant="small">
-          Data hanya tersimpan di HP ini. Tidak ada akun, tidak ada server, dan tidak ada
-          sinkronisasi otomatis.
+          Data hanya tersimpan di HP ini. Tidak ada akun, tidak ada server, dan
+          tidak ada sinkronisasi otomatis.
         </NeoText>
         <NeoButton label="HAPUS SEMUA DATA" bg={colors.red} onPress={wipe} />
       </NeoCard>
@@ -645,9 +748,9 @@ function SettingsContent({
 const styles = StyleSheet.create({
   stack: { gap: spacing.md },
   rowBetween: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: spacing.sm,
   },
   errorBox: {

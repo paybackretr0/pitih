@@ -130,6 +130,10 @@ export default function RootLayout() {
           name="target"
           options={{ animation: "slide_from_right" }}
         />
+        <Stack.Screen
+          name="tertib"
+          options={{ animation: "slide_from_right" }}
+        />
       </Stack>
     </>
   );

@@ -15,6 +15,13 @@
       "when": 1792721892509,
       "tag": "0001_optimal_power_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792723518344,
+      "tag": "0002_elite_rocket_racer",
+      "breakpoints": true
     }
   ]
 }

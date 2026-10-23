@@ -1,10 +1,10 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from "react-native";
 
-import { NeoButton } from './neo/neo-button';
-import { NeoText } from './neo/neo-text';
-import { shortDate, shortDateWithYear } from '@/lib/format';
-import { daysLeft, isPeriodCurrent, type Period } from '@/lib/period';
-import { colors, spacing } from '@/theme';
+import { shortDate, shortDateWithYear } from "@/lib/format";
+import { daysLeft, isPeriodCurrent, type Period } from "@/lib/period";
+import { colors, spacing } from "@/theme";
+import { NeoButton } from "./neo/neo-button";
+import { NeoText } from "./neo/neo-text";
 
 type Props = {
   period: Period;
@@ -15,7 +15,11 @@ type Props = {
 export function PeriodNavigator({ period, today, onShift }: Props) {
   const left = daysLeft(period, today);
   const current = isPeriodCurrent(period, today);
-  const state = current ? `SISA ${left} HARI` : left > 0 ? 'BELUM MULAI' : 'SELESAI';
+  const state = current
+    ? `SISA ${left} HARI`
+    : left > 0
+      ? "BELUM MULAI"
+      : "SELESAI";
 
   return (
     <View style={styles.row}>
@@ -30,7 +34,7 @@ export function PeriodNavigator({ period, today, onShift }: Props) {
         <NeoText variant="label" numberOfLines={1}>
           {`${shortDate(period.start)} - ${shortDateWithYear(period.end)}`}
         </NeoText>
-        <NeoText variant="label" color={current ? colors.ink : '#11111199'}>
+        <NeoText variant="label" color={current ? colors.ink : "#11111199"}>
           {state}
         </NeoText>
       </View>
@@ -48,9 +52,9 @@ export function PeriodNavigator({ period, today, onShift }: Props) {
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.md,
   },
-  center: { flex: 1, alignItems: 'center', gap: 2 },
+  center: { flex: 1, alignItems: "center", gap: 2 },
 });

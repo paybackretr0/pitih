@@ -1,4 +1,4 @@
-import { differenceInCalendarDays, parseISO } from 'date-fns';
+import { differenceInCalendarDays, parseISO } from "date-fns";
 
 /** Capped at 100 so the bar never overflows, while the text can show the truth. */
 export function goalProgressPercent(saved: number, target: number): number {
@@ -11,7 +11,10 @@ export function goalRemaining(saved: number, target: number): number {
 }
 
 /** Negative means the deadline has passed. Null means no deadline. */
-export function goalDaysLeft(deadline: string | null, today: string): number | null {
+export function goalDaysLeft(
+  deadline: string | null,
+  today: string,
+): number | null {
   if (!deadline) return null;
   const end = parseISO(deadline);
   const start = parseISO(today);

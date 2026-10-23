@@ -1,18 +1,23 @@
-import { Directory, File, Paths } from 'expo-file-system';
+import { Directory, File, Paths } from "expo-file-system";
 
-export const RECEIPTS_DIRECTORY = 'receipts';
+export const RECEIPTS_DIRECTORY = "receipts";
 
 function receiptDirectory(): Directory {
   return new Directory(Paths.document, RECEIPTS_DIRECTORY);
 }
 
 function extensionOf(uri: string): string {
-  const match = /\.([a-z0-9]+)(?:\?|$)/i.exec(uri.split('/').pop() ?? '');
+  const match = /\.([a-z0-9]+)(?:\?|$)/i.exec(uri.split("/").pop() ?? "");
   const extension = match?.[1]?.toLowerCase();
-  if (extension === 'jpg' || extension === 'jpeg' || extension === 'png' || extension === 'webp') {
+  if (
+    extension === "jpg" ||
+    extension === "jpeg" ||
+    extension === "png" ||
+    extension === "webp"
+  ) {
     return extension;
   }
-  return 'jpg';
+  return "jpg";
 }
 
 /**
@@ -21,7 +26,8 @@ function extensionOf(uri: string): string {
  */
 export async function storeReceipt(sourceUri: string): Promise<string> {
   const directory = receiptDirectory();
-  if (!directory.exists) directory.create({ intermediates: true, idempotent: true });
+  if (!directory.exists)
+    directory.create({ intermediates: true, idempotent: true });
 
   const file = new File(
     directory,

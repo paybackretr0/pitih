@@ -1,11 +1,17 @@
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { NeoSurface } from './neo/neo-surface';
-import { NeoText } from './neo/neo-text';
-import type { TransactionListItem } from '@/db/queries';
-import { rp } from '@/lib/format';
-import { border as borderTokens, categoryColor, colors, fonts, spacing } from '@/theme';
+import type { TransactionListItem } from "@/db/queries";
+import { rp } from "@/lib/format";
+import {
+  border as borderTokens,
+  categoryColor,
+  colors,
+  fonts,
+  spacing,
+} from "@/theme";
+import { NeoSurface } from "./neo/neo-surface";
+import { NeoText } from "./neo/neo-text";
 
 type Props = {
   item: TransactionListItem;
@@ -15,10 +21,15 @@ type Props = {
 
 export function TransactionRow({ item, onPress, onLongPress }: Props) {
   const [focused, setFocused] = useState(false);
-  const isIncome = item.type === 'income';
-  const tag = item.needWant === 'need' ? 'BUTUH' : item.needWant === 'want' ? 'MAU' : null;
-  const label = `${item.categoryName}, ${isIncome ? 'masuk' : 'keluar'} ${rp(item.amount)}${
-    item.note ? `, ${item.note}` : ''
+  const isIncome = item.type === "income";
+  const tag =
+    item.needWant === "need"
+      ? "BUTUH"
+      : item.needWant === "want"
+        ? "MAU"
+        : null;
+  const label = `${item.categoryName}, ${isIncome ? "masuk" : "keluar"} ${rp(item.amount)}${
+    item.note ? `, ${item.note}` : ""
   }`;
 
   return (
@@ -30,17 +41,23 @@ export function TransactionRow({ item, onPress, onLongPress }: Props) {
       onLongPress={onLongPress}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
-      delayLongPress={450}>
+      delayLongPress={450}
+    >
       {({ pressed }) => (
         <NeoSurface
           offset={3}
-          bg={pressed ? '#FFF0C9' : colors.white}
-          innerStyle={styles.inner}>
+          bg={pressed ? "#FFF0C9" : colors.white}
+          innerStyle={styles.inner}
+        >
           <View
-            style={[styles.icon, { backgroundColor: categoryColor(item.categoryColor) }]}
+            style={[
+              styles.icon,
+              { backgroundColor: categoryColor(item.categoryColor) },
+            ]}
             accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants">
-            <Text style={styles.emoji}>{item.categoryIcon ?? '•'}</Text>
+            importantForAccessibility="no-hide-descendants"
+          >
+            <Text style={styles.emoji}>{item.categoryIcon ?? "•"}</Text>
           </View>
 
           <View style={styles.body}>
@@ -60,10 +77,12 @@ export function TransactionRow({ item, onPress, onLongPress }: Props) {
           </View>
 
           <NeoText variant="mono" style={styles.amount} numberOfLines={1}>
-            {isIncome ? '+' : '-'}
-            {rp(item.amount).replace('Rp ', '')}
+            {isIncome ? "+" : "-"}
+            {rp(item.amount).replace("Rp ", "")}
           </NeoText>
-          {focused ? <View pointerEvents="none" style={styles.focusRing} /> : null}
+          {focused ? (
+            <View pointerEvents="none" style={styles.focusRing} />
+          ) : null}
         </NeoSurface>
       )}
     </Pressable>
@@ -72,8 +91,8 @@ export function TransactionRow({ item, onPress, onLongPress }: Props) {
 
 const styles = StyleSheet.create({
   inner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.md,
     padding: spacing.md,
   },
@@ -82,15 +101,15 @@ const styles = StyleSheet.create({
     height: 42,
     borderWidth: borderTokens.width,
     borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   emoji: { fontSize: 20 },
   body: { flex: 1, gap: 2 },
-  meta: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+  meta: { flexDirection: "row", gap: spacing.sm, alignItems: "center" },
   amount: { fontFamily: fonts.monoBold, flexShrink: 0 },
   focusRing: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,

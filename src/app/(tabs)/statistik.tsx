@@ -1,17 +1,17 @@
-import { addDays, parseISO } from 'date-fns';
-import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { addDays, parseISO } from "date-fns";
+import { router } from "expo-router";
+import { useMemo, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 
-import { NeoButton } from '@/components/neo/neo-button';
-import { NeoCard } from '@/components/neo/neo-card';
-import { NeoProgress } from '@/components/neo/neo-progress';
-import { NeoScreen } from '@/components/neo/neo-screen';
-import { NeoEmpty, NeoError, NeoLoading } from '@/components/neo/neo-states';
-import { NeoText } from '@/components/neo/neo-text';
-import { PeriodNavigator } from '@/components/period-navigator';
-import { ScreenHeader } from '@/components/screen-header';
-import { listGoals } from '@/db/goals';
+import { NeoButton } from "@/components/neo/neo-button";
+import { NeoCard } from "@/components/neo/neo-card";
+import { NeoProgress } from "@/components/neo/neo-progress";
+import { NeoScreen } from "@/components/neo/neo-screen";
+import { NeoEmpty, NeoError, NeoLoading } from "@/components/neo/neo-states";
+import { NeoText } from "@/components/neo/neo-text";
+import { PeriodNavigator } from "@/components/period-navigator";
+import { ScreenHeader } from "@/components/screen-header";
+import { listGoals } from "@/db/goals";
 import {
   getCategoryBudgets,
   getCategoryTotals,
@@ -19,28 +19,33 @@ import {
   getPeriodSummary,
   getTopExpenses,
   getTotalBudget,
-} from '@/db/queries';
-import type { Goal } from '@/db/schema';
+} from "@/db/queries";
+import type { Goal } from "@/db/schema";
 import {
   goalDaysLeft,
   goalRemaining,
   goalTotals,
   isGoalReached,
   type GoalTotals,
-} from '@/features/goals/goals';
-import { useDbQuery } from '@/hooks/use-db-query';
-import { useToday } from '@/hooks/use-today';
-import { dayLabel, isoDay, percentOf, rp, shortDate } from '@/lib/format';
+} from "@/features/goals/goals";
+import { useDbQuery } from "@/hooks/use-db-query";
+import { useToday } from "@/hooks/use-today";
+import { dayLabel, isoDay, percentOf, rp, shortDate } from "@/lib/format";
 import {
   currentPeriod,
   daysLeft,
   isPeriodCurrent,
   periodAtIndex,
   shiftPeriod,
-} from '@/lib/period';
-import { dailyAllowance } from '@/lib/status';
-import { useAppStore } from '@/store/app-store';
-import { border as borderTokens, categoryColor, colors, spacing } from '@/theme';
+} from "@/lib/period";
+import { dailyAllowance } from "@/lib/status";
+import { useAppStore } from "@/store/app-store";
+import {
+  border as borderTokens,
+  categoryColor,
+  colors,
+  spacing,
+} from "@/theme";
 
 export default function StatistikScreen() {
   const today = useToday();
@@ -53,28 +58,45 @@ export default function StatistikScreen() {
 
   const period = useMemo(() => {
     if (!periodStart || !basePeriod) return null;
-    return periodAtIndex(periodStart, Math.min(viewIndex ?? basePeriod.index, basePeriod.index));
+    return periodAtIndex(
+      periodStart,
+      Math.min(viewIndex ?? basePeriod.index, basePeriod.index),
+    );
   }, [periodStart, basePeriod, viewIndex]);
 
-  const stats = useDbQuery(
-    async () => {
-      if (!period) throw new Error('Tanggal mulai periode belum diatur.');
-      const previousPeriod = shiftPeriod(period, -1);
-      const [summary, categoryTotals, daily, budgets, top, previous, totalBudget, goals] =
-        await Promise.all([
-          getPeriodSummary(period),
-          getCategoryTotals(period),
-          getDailyExpenses(period),
-          getCategoryBudgets(period.index),
-          getTopExpenses(period),
-          getPeriodSummary(previousPeriod),
-          getTotalBudget(period.index),
-          listGoals(),
-        ]);
-      return { summary, categoryTotals, daily, budgets, top, previous, totalBudget, goals };
-    },
-    [period?.start, period?.end, period?.index],
-  );
+  const stats = useDbQuery(async () => {
+    if (!period) throw new Error("Tanggal mulai periode belum diatur.");
+    const previousPeriod = shiftPeriod(period, -1);
+    const [
+      summary,
+      categoryTotals,
+      daily,
+      budgets,
+      top,
+      previous,
+      totalBudget,
+      goals,
+    ] = await Promise.all([
+      getPeriodSummary(period),
+      getCategoryTotals(period),
+      getDailyExpenses(period),
+      getCategoryBudgets(period.index),
+      getTopExpenses(period),
+      getPeriodSummary(previousPeriod),
+      getTotalBudget(period.index),
+      listGoals(),
+    ]);
+    return {
+      summary,
+      categoryTotals,
+      daily,
+      budgets,
+      top,
+      previous,
+      totalBudget,
+      goals,
+    };
+  }, [period?.start, period?.end, period?.index]);
 
   if (!period) return <NeoLoading label="MENYIAPKAN PERIODE" />;
   if (stats.loading && !stats.data) return <NeoLoading />;
@@ -82,13 +104,24 @@ export default function StatistikScreen() {
     return (
       <NeoScreen>
         <ScreenHeader title="STATISTIK" />
-        <NeoError message={stats.error ?? 'Data tidak tersedia.'} onRetry={stats.retry} />
+        <NeoError
+          message={stats.error ?? "Data tidak tersedia."}
+          onRetry={stats.retry}
+        />
       </NeoScreen>
     );
   }
 
-  const { summary, categoryTotals, daily, budgets, top, previous, totalBudget, goals } =
-    stats.data;
+  const {
+    summary,
+    categoryTotals,
+    daily,
+    budgets,
+    top,
+    previous,
+    totalBudget,
+    goals,
+  } = stats.data;
   const left = daysLeft(period, today);
   const allowance = isPeriodCurrent(period, today)
     ? dailyAllowance(totalBudget, summary.expense, left)
@@ -101,7 +134,9 @@ export default function StatistikScreen() {
   const maxDay = Math.max(peak, allowance ?? 0, 1);
   const previousDelta =
     previous.expense > 0
-      ? Math.round(((summary.expense - previous.expense) / previous.expense) * 100)
+      ? Math.round(
+          ((summary.expense - previous.expense) / previous.expense) * 100,
+        )
       : null;
   const wantPercent = percentOf(summary.want, summary.expense);
   const needPercent = percentOf(summary.need, summary.expense);
@@ -111,7 +146,10 @@ export default function StatistikScreen() {
 
   return (
     <NeoScreen>
-      <ScreenHeader title="STATISTIK" subtitle={`${shortDate(period.start)} - ${shortDate(period.end)}`} />
+      <ScreenHeader
+        title="STATISTIK"
+        subtitle={`${shortDate(period.start)} - ${shortDate(period.end)}`}
+      />
       <PeriodNavigator
         period={period}
         today={today}
@@ -125,7 +163,7 @@ export default function StatistikScreen() {
           title="BELUM ADA PENGELUARAN"
           message="Statistik muncul setelah ada pengeluaran yang dicatat di periode ini."
           actionLabel="CATAT PENGELUARAN"
-          onAction={() => router.push('/tambah')}
+          onAction={() => router.push("/tambah")}
         />
       ) : (
         <>
@@ -136,13 +174,28 @@ export default function StatistikScreen() {
             </View>
             <View style={styles.splitBar}>
               {summary.need > 0 ? (
-                <View style={[styles.splitPart, { flex: summary.need, backgroundColor: colors.green }]} />
+                <View
+                  style={[
+                    styles.splitPart,
+                    { flex: summary.need, backgroundColor: colors.green },
+                  ]}
+                />
               ) : null}
               {summary.want > 0 ? (
-                <View style={[styles.splitPart, { flex: summary.want, backgroundColor: colors.pink }]} />
+                <View
+                  style={[
+                    styles.splitPart,
+                    { flex: summary.want, backgroundColor: colors.pink },
+                  ]}
+                />
               ) : null}
               {untagged > 0 ? (
-                <View style={[styles.splitPart, { flex: untagged, backgroundColor: colors.yellow }]} />
+                <View
+                  style={[
+                    styles.splitPart,
+                    { flex: untagged, backgroundColor: colors.yellow },
+                  ]}
+                />
               ) : null}
             </View>
             <View style={styles.legendRow}>
@@ -167,13 +220,19 @@ export default function StatistikScreen() {
               const total = Number(row.total);
               const share = percentOf(total, summary.expense) ?? 0;
               const categoryBudget = budgets[row.categoryId];
-              const budgetUsed = categoryBudget ? Math.round((total / categoryBudget) * 100) : null;
+              const budgetUsed = categoryBudget
+                ? Math.round((total / categoryBudget) * 100)
+                : null;
               return (
                 <View key={row.categoryId} style={styles.categoryRow}>
                   <View style={styles.categoryTop}>
                     <View style={styles.categoryName}>
-                      <Text style={styles.emoji}>{row.icon ?? '•'}</Text>
-                      <NeoText variant="body" numberOfLines={1} style={styles.flex}>
+                      <Text style={styles.emoji}>{row.icon ?? "•"}</Text>
+                      <NeoText
+                        variant="body"
+                        numberOfLines={1}
+                        style={styles.flex}
+                      >
                         {row.name}
                       </NeoText>
                     </View>
@@ -196,8 +255,12 @@ export default function StatistikScreen() {
                         <View
                           style={[
                             styles.budgetFlag,
-                            { backgroundColor: budgetUsed >= 100 ? colors.red : colors.orange },
-                          ]}>
+                            {
+                              backgroundColor:
+                                budgetUsed >= 100 ? colors.red : colors.orange,
+                            },
+                          ]}
+                        >
                           <NeoText variant="small">{`${budgetUsed}% DARI BUDGET`}</NeoText>
                         </View>
                       ) : (
@@ -230,7 +293,8 @@ export default function StatistikScreen() {
                       key={day}
                       accessible
                       accessibilityLabel={`${dayLabel(day)}, ${rp(total)}`}
-                      style={styles.barColumn}>
+                      style={styles.barColumn}
+                    >
                       <View
                         style={[
                           styles.bar,
@@ -247,7 +311,11 @@ export default function StatistikScreen() {
               {allowance !== null && allowance > 0 ? (
                 <View
                   pointerEvents="none"
-                  style={[styles.allowanceLine, { bottom: `${(allowance / maxDay) * 100}%` }]}>
+                  style={[
+                    styles.allowanceLine,
+                    { bottom: `${(allowance / maxDay) * 100}%` },
+                  ]}
+                >
                   <NeoText variant="label">JATAH HARIAN</NeoText>
                 </View>
               ) : null}
@@ -262,15 +330,19 @@ export default function StatistikScreen() {
             <NeoText variant="label">PERBANDINGAN PERIODE LALU</NeoText>
             {previousDelta === null ? (
               <NeoText variant="small">
-                Belum ada pengeluaran di periode sebelumnya, jadi perbandingan belum bisa dihitung.
+                Belum ada pengeluaran di periode sebelumnya, jadi perbandingan
+                belum bisa dihitung.
               </NeoText>
             ) : (
               <>
                 <NeoText variant="subtitle">
-                  {`Pengeluaran ${Math.abs(previousDelta)}% lebih ${previousDelta >= 0 ? 'tinggi' : 'rendah'} dari periode lalu.`}
+                  {`Pengeluaran ${Math.abs(previousDelta)}% lebih ${previousDelta >= 0 ? "tinggi" : "rendah"} dari periode lalu.`}
                 </NeoText>
                 <View style={styles.compareRow}>
-                  <AmountLine label="PERIODE LALU" value={rp(previous.expense)} />
+                  <AmountLine
+                    label="PERIODE LALU"
+                    value={rp(previous.expense)}
+                  />
                   <AmountLine label="PERIODE INI" value={rp(summary.expense)} />
                 </View>
               </>
@@ -305,12 +377,14 @@ export default function StatistikScreen() {
         <View style={styles.rowBetween}>
           <NeoText variant="label">TARGET TABUNGAN</NeoText>
           <NeoButton
-            label={goals.length > 0 ? 'KELOLA' : 'BUAT'}
+            label={goals.length > 0 ? "KELOLA" : "BUAT"}
             compact
             offset={3}
-            onPress={() => router.push('/target')}
+            onPress={() => router.push("/target")}
             accessibilityLabel={
-              goals.length > 0 ? 'Kelola target tabungan' : 'Buat target tabungan'
+              goals.length > 0
+                ? "Kelola target tabungan"
+                : "Buat target tabungan"
             }
           />
         </View>
@@ -319,8 +393,8 @@ export default function StatistikScreen() {
           <>
             <NeoText variant="subtitle">BELUM ADA TARGET</NeoText>
             <NeoText variant="small">
-              Mulai satu target, misalnya dana darurat. Uang yang disisihkan di target tidak
-              mengubah saldo transaksi.
+              Mulai satu target, misalnya dana darurat. Uang yang disisihkan di
+              target tidak mengubah saldo transaksi.
             </NeoText>
           </>
         ) : (
@@ -330,8 +404,16 @@ export default function StatistikScreen() {
             </NeoText>
             <NeoText variant="small">{`dari ${rp(totals.totalTarget)}`}</NeoText>
             <NeoProgress
-              value={totals.totalTarget > 0 ? totals.totalSaved / totals.totalTarget : 0}
-              color={totals.reachedCount === totals.count ? colors.green : colors.purple}
+              value={
+                totals.totalTarget > 0
+                  ? totals.totalSaved / totals.totalTarget
+                  : 0
+              }
+              color={
+                totals.reachedCount === totals.count
+                  ? colors.green
+                  : colors.purple
+              }
               accessibilityLabel="Progres semua target tabungan"
             />
             <View style={styles.rowBetween}>
@@ -372,7 +454,10 @@ function goalCountText(totals: GoalTotals): string {
   return `${totals.count} target aktif.`;
 }
 
-function nextGoalDeadline(goals: Goal[], today: string): { goal: Goal; days: number } | null {
+function nextGoalDeadline(
+  goals: Goal[],
+  today: string,
+): { goal: Goal; days: number } | null {
   let next: { goal: Goal; days: number } | null = null;
   for (const goal of goals) {
     if (isGoalReached(goal.savedAmount, goal.targetAmount)) continue;
@@ -405,31 +490,45 @@ function AmountLine({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   stack: { gap: spacing.sm },
   rowBetween: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: spacing.sm,
   },
   splitBar: {
-    flexDirection: 'row',
+    flexDirection: "row",
     height: 22,
     borderWidth: borderTokens.width,
     borderColor: colors.ink,
     backgroundColor: colors.white,
   },
-  splitPart: { height: '100%' },
-  legendRow: { flexDirection: 'row', gap: spacing.lg },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  splitPart: { height: "100%" },
+  legendRow: { flexDirection: "row", gap: spacing.lg },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
   dot: { width: 12, height: 12, borderWidth: 2, borderColor: colors.ink },
-  amountsGrid: { flexDirection: 'row', gap: spacing.lg },
+  amountsGrid: { flexDirection: "row", gap: spacing.lg },
   amountLine: { flex: 1, gap: 2 },
   categoryRow: { gap: spacing.xs, marginTop: spacing.sm },
-  categoryTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  categoryName: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  categoryTop: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  categoryName: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
   emoji: { fontSize: 16 },
   flex: { flex: 1 },
-  categoryMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  budgetFlag: { borderWidth: 2, borderColor: colors.ink, paddingHorizontal: spacing.xs },
+  categoryMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  budgetFlag: {
+    borderWidth: 2,
+    borderColor: colors.ink,
+    paddingHorizontal: spacing.xs,
+  },
   chartFrame: {
     height: 150,
     borderWidth: borderTokens.width,
@@ -437,26 +536,31 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     padding: spacing.sm,
   },
-  chartBars: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', gap: 2 },
-  barColumn: { flex: 1, height: '100%', justifyContent: 'flex-end' },
-  bar: { width: '100%' },
+  chartBars: { flex: 1, flexDirection: "row", alignItems: "flex-end", gap: 2 },
+  barColumn: { flex: 1, height: "100%", justifyContent: "flex-end" },
+  bar: { width: "100%" },
   allowanceLine: {
-    position: 'absolute',
+    position: "absolute",
     left: spacing.sm,
     right: spacing.sm,
     borderTopWidth: 2,
     borderTopColor: colors.ink,
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
-  chartAxis: { flexDirection: 'row', justifyContent: 'space-between' },
-  compareRow: { flexDirection: 'row', gap: spacing.lg },
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs },
+  chartAxis: { flexDirection: "row", justifyContent: "space-between" },
+  compareRow: { flexDirection: "row", gap: spacing.lg },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
   rank: {
     width: 28,
     height: 28,
     borderWidth: 2,
     borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

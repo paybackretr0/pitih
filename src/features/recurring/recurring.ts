@@ -1,6 +1,6 @@
-import { getDaysInMonth, parseISO } from 'date-fns';
+import { getDaysInMonth, parseISO } from "date-fns";
 
-import { isoDay } from '@/lib/format';
+import { isoDay } from "@/lib/format";
 
 export type RecurringRuleLike = {
   dayOfMonth: number;
@@ -33,7 +33,12 @@ export function dueRecurringDates(
 
   const start = parseISO(rule.startDate);
   const end = parseISO(today);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return [];
+  if (
+    Number.isNaN(start.getTime()) ||
+    Number.isNaN(end.getTime()) ||
+    start > end
+  )
+    return [];
 
   const dates: string[] = [];
   const cursor = monthStart(start);
@@ -56,7 +61,10 @@ export function dueRecurringDates(
 }
 
 /** The next occurrence on or after today, for the list screen. */
-export function nextRecurringDate(rule: RecurringRuleLike, today: string): string | null {
+export function nextRecurringDate(
+  rule: RecurringRuleLike,
+  today: string,
+): string | null {
   if (!rule.isActive) return null;
 
   const start = parseISO(rule.startDate);

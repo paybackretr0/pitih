@@ -1,7 +1,7 @@
-import { asc, desc, eq, sql } from 'drizzle-orm';
+import { asc, desc, eq, sql } from "drizzle-orm";
 
-import { db } from './client';
-import { goals, type Goal, type NewGoal } from './schema';
+import { db } from "./client";
+import { goals, type Goal, type NewGoal } from "./schema";
 
 export type GoalInput = {
   name: string;
