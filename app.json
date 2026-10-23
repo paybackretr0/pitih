@@ -9,10 +9,10 @@
     "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.pitih.app"
+      "bundleIdentifier": "com.khalied.pitih"
     },
     "android": {
-      "package": "com.pitih.app",
+      "package": "com.khalied.pitih",
       "adaptiveIcon": {
         "backgroundColor": "#FFF4E0",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
